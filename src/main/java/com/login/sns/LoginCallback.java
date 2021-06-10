@@ -2,6 +2,7 @@ package com.login.sns;
 
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
+import java.util.Collections;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -10,9 +11,18 @@ import javax.servlet.http.HttpSession;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.google.api.client.auth.openidconnect.IdToken.Payload;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.util.Utils;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.json.JsonFactory;
 
 @Controller
 public class LoginCallback {
@@ -122,5 +132,67 @@ public class LoginCallback {
 		if(!emailExists) {
 			System.out.println("로그인 로직");
 		}
+	}
+	
+	/**
+	 * Authentication Code를 전달 받는 엔드포인트
+	 **/
+	@RequestMapping(value = "/google", method = RequestMethod.POST)
+	public void googleLoginCallBack(Model model, String idtoken) throws Exception{
+		System.out.println(idtoken);
+		
+		HttpTransport transport = Utils.getDefaultTransport();
+		JsonFactory jsonFactory = Utils.getDefaultJsonFactory();
+		// 백엔드에 액세스하는 앱의 CLIENT_ID를 지정합니다.
+		GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+				.setAudience(Collections.singletonList("696747606302-i83ht0g77q059bjba5et37kgr4e3gptj.apps.googleusercontent.com")).build();
+		// 또는 여러 클라이언트가 백엔드에 액세스하는 경우 :
+	    //.setAudience(Arrays.asList(CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3))
+		
+		JSONObject json = new JSONObject();
+		
+		// (HTTPS POST로 idTokenString 수신)
+		GoogleIdToken idToken = verifier.verify(idtoken);
+		if (idToken != null) {
+			Payload payload = idToken.getPayload();
+			
+			// Print user identifier
+			String userId = payload.getSubject();
+			System.out.println("User ID: " + userId);
+			
+			// Get profile information from payload
+			String email = (String) payload.get("email");
+			System.out.println(email);
+			String name = (String) payload.get("name");
+			String pictureUrl = (String) payload.get("picture");
+			String locale = (String) payload.get("locale");
+			String familyName = (String) payload.get("family_name");
+			String givenName = (String) payload.get("given_name");
+
+			  // Use or store profile information
+			  // ...
+
+			/*
+			if (dupId((String) payload.get("email")).contains("false")) { //회원가입이 안 되어 있는 경우 로직을 작성해서 DB에 넣자
+				SocialJoinVO sjVO = new SocialJoinVO();
+				sjVO.setId((String) payload.get("email"));
+				sjVO.setAuth_email((String) payload.get("email"));
+				sjVO.setNickname((String) payload.get("given_name"));
+				sjVO.setBlog_name((String) payload.get("given_name"));
+				sjVO.setProfile_img((String) payload.get("picture"));
+				sjVO.setPlatform("google");
+				sjVO.setAccess_token(idtoken);
+				
+				new MemberService().googleJoin(sjVO);
+			}//end if
+			*/
+			
+			model.addAttribute("id", (String) payload.get("email"));
+			json.put("login_result", "success");
+			//토근 및 DB에 사용자가 있는지 확인 후 세션 생성
+		} else { //유효하지 않은 토큰
+			json.put("login_result", "fail");
+		}//end else
+		/* return json.toJSONString(); */
 	}
 }
