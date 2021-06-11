@@ -9,6 +9,7 @@
 	<script type="text/javascript" src="https://static.nid.naver.com/js/naverLogin_implicit-1.0.2.js" charset="utf-8"></script>
 	<!-- Google 로그인을 통합하는 웹 페이지에 Google Platform 라이브러리를 포함해야합니다. -->
 	<script src="https://apis.google.com/js/platform.js" async defer></script>
+	<script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
 	<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
 	<style type="text/css">
 	  html, div, body,h3{
@@ -36,6 +37,14 @@
 		<label>로그인</label> <br>
 		<div id="googleLoginBtn" style="cursor: pointer">
 			<img id="googleLoginImg" src="${pageContext.request.contextPath}/resources/img/test.png">
+		</div>
+	</fieldset>
+	<fieldset>
+		<label>로그인</label> <br>
+		<div style="cursor: pointer">
+			<a id="custom-login-btn" href="javascript:kakaoLogin()">
+				<img id="googleLoginImg" src="${pageContext.request.contextPath}/resources/img/kakao_login_medium_narrow.png">
+			</a>
 		</div>
 	</fieldset>
 	<br>
@@ -84,8 +93,8 @@
 	}
 		*/
 		
-		const googleLoginBtn = document.getElementById("googleLoginBtn");
-		googleLoginBtn.addEventListener("click", onClickGoogleLogin);
+		/* const googleLoginBtn = document.getElementById("googleLoginBtn");
+		googleLoginBtn.addEventListener("click", onClickGoogleLogin); */
 		
 		/* 로그아웃 함수 아무곳이나 엮어주면 된다 */
 		function signOut() {
@@ -93,6 +102,28 @@
 			auth2.signOut().then(function () {
 			  console.log('User signed out.');
 			});
+		}
+		
+		window.Kakao.init('9804053c970b508fadc3297270e68484'); 
+		
+		function kakaoLogin() { 
+			window.Kakao.Auth.login({
+				scope: 'profile, account_email, gender, age_range, birthday', //동의항목 페이지에 있는 개인정보 보호 테이블의 활성화된 ID값을 넣습니다.
+				redirectUri: 'http://localhost:9090/sns/kakao',
+				success: function(response) { 
+					console.log(response) // 로그인 성공하면 받아오는 데이터 
+					window.Kakao.API.request({ // 사용자 정보 가져오기 
+						url: '/v2/user/me', 
+						success: (res) => { 
+							const kakao_account = res.kakao_account; 
+							console.log(kakao_account) 
+						} 
+					});
+				},
+				fail: function(error) { 
+					console.log(error); 
+				} 
+			}); 
 		}
 	</script>
 </body>

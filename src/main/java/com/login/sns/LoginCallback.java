@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.google.api.client.auth.openidconnect.IdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -194,5 +195,26 @@ public class LoginCallback {
 			json.put("login_result", "fail");
 		}//end else
 		/* return json.toJSONString(); */
+	}
+	
+	@RequestMapping(value = "/kakao", produces = "application/json", method = { RequestMethod.GET, RequestMethod.POST })
+	public void kakaoLogin(String code, HttpSession session) throws Exception{
+		KakaoLoginApi kakao = new KakaoLoginApi();
+		
+		JsonNode node = kakao.getAccessToken(code);
+		//토큰에 사용자 정보가 있음
+		JsonNode accessToken = node.get("access_token");
+		//사용자 정보
+		JsonNode userInfo = kakao.getKakaoUserInfo(accessToken);
+		
+		JsonNode properties = userInfo.path("properties");
+		JsonNode kakao_account = userInfo.path("kakao_account");
+		
+		System.out.println(kakao_account.path("email").asText());
+		System.out.println(properties.path("nickname").asText());
+		System.out.println(kakao_account.path("gender").asText());
+		System.out.println(kakao_account.path("birthday").asText());
+		System.out.println(kakao_account.path("age_range").asText());
+		
 	}
 }
